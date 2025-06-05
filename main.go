@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/veandco/go-sdl2/sdl"
+	"math/rand/v2"
 	"os"
 )
 
@@ -13,11 +15,11 @@ const (
 
 var (
 	// 8 bit registers
-	V0, V1, V2, V3, V4, V5, V6, V7, V8, V9, VA, VB, VC, VD, VE, VF uint8
-	registers                                                      map[string]uint8 // TODO which one to use?
+	registers [16]uint8 // mapped from Vx (V0-VF): value it holds
+	// VF is special register: used as a flag to hold information about result of operations
 
 	// 16 bit registers
-	indexRegister uint16 // store memory address
+	indexRegister uint16 // (I) store memory address, only lowest 12 bits (rightmost) are used
 	pc            uint16
 
 	// stack
@@ -31,12 +33,28 @@ var (
 
 	// keys
 	inputKeys = map[uint8]bool{
+		0x0: false,
 		0x1: false,
-		0x2: false, // etc.
-		// TODO: type out
+		0x2: false,
+		0x3: false,
+		0x4: false,
+		0x5: false,
+		0x6: false,
+		0x7: false,
+		0x8: false,
+		0x9: false,
+		0xA: false,
+		0xB: false,
+		0xC: false,
+		0xD: false,
+		0xE: false,
 	}
 
 	// display # TODO: must initialize with all off w/ for loop
+	/*
+	 (0,0)     (63, 0)
+	 (0, 31)   (63, 31)
+	*/
 	display [64][32]uint32
 
 	// memory
@@ -49,6 +67,7 @@ var (
 	*/
 
 	// opcode
+	// represents current opcode that CPU will execute?
 	opcode uint16
 
 	// video buffer (#TODO: temporary, replace w/ the bindings)
@@ -63,7 +82,7 @@ const (
 	fontStart        = 0x050
 )
 
-func main() {
+func ogmain() {
 	// TODO: have init function?
 	pc = instructionStart // initialize PC to first instruction
 
@@ -106,3 +125,49 @@ func check(err error) {
 }
 
 // TODO: type Debugger struct {}?
+func Cycle() {
+}
+
+func GenerateRandNumber() int {
+	return rand.IntN(255)
+}
+
+func main() {
+	sdl.Init(sdl.INIT_EVERYTHING)
+	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
+		panic(err)
+	}
+	defer sdl.Quit()
+
+	window, err := sdl.CreateWindow("test", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, 800, 600, sdl.WINDOW_SHOWN)
+	if err != nil {
+		panic(err)
+	}
+	defer window.Destroy()
+
+	surface, err := window.GetSurface()
+	if err != nil {
+		panic(err)
+	}
+	surface.FillRect(nil, 0)
+
+	rect := sdl.Rect{0, 0, 200, 200}
+	colour := sdl.Color{R: 255, G: 0, B: 255, A: 255} // purple
+	pixel := sdl.MapRGBA(surface.Format, colour.R, colour.G, colour.B, colour.A)
+	surface.FillRect(&rect, pixel)
+	window.UpdateSurface()
+
+	running := true
+	for running {
+		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+			switch event.(type) {
+			case *sdl.QuitEvent: // NOTE: Please use `*sdl.QuitEvent` for `v0.4.x` (current version).
+				println("Quit")
+				running = false
+				break
+			}
+		}
+
+		sdl.Delay(33)
+	}
+}
